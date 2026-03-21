@@ -298,7 +298,7 @@ bash scripts/sync_manager.sh plan-remove \
   --json
 ```
 
-Apply:
+Apply A Confirmed Plan:
 
 ```bash
 bash scripts/sync_manager.sh apply --plan /tmp/skill-sync.plan --json
@@ -359,3 +359,78 @@ Because source, skill, and agent names can get long. Numbered lists make it easi
 ### What should I do if I do not know the current state yet?
 
 Start with a status-first request. Confirm scope and source first, then inspect the result in this order: `Agent View`, `Skill View`, `Summary`, and `Next Suggestion`.
+
+### Why can source conflicts happen?
+
+If the same skill name exists in more than one source, the script will not silently choose for you. You should provide an explicit source choice during sync or status work.
+
+Example:
+
+```bash
+bash scripts/sync_manager.sh plan-sync \
+  --sources cc-switch,team-shared \
+  --scope user \
+  --tools codex \
+  --skills pdf \
+  --source-choice pdf=team-shared \
+  --output /tmp/skill-sync.plan \
+  --json
+```
+
+### Why was a target skipped?
+
+If a target path is already a normal directory or file instead of a symlink, the script skips it and reports the reason to avoid deleting user-managed content.
+
+Common reasons:
+
+- you created a same-name directory manually
+- the tool generated a same-name path on its own
+- the target is not a symlink and cannot be safely unlinked
+
+### Why did `plan-remove` not actually remove anything?
+
+`plan-remove` and `plan-sync` only build a dry-run plan. They do not modify the filesystem until you explicitly apply the plan.
+
+```bash
+bash scripts/sync_manager.sh apply --plan /tmp/skill-remove.plan --json
+```
+
+### Why do project-level paths look like `./.codex/skills`?
+
+`project` scope writes relative to the current project root. For example, if you run the command in `/path/to/my-project`, the project-level Codex path resolves to:
+
+```text
+/path/to/my-project/.codex/skills
+```
+
+If you pass `--project-root`, that path becomes the reference root instead.
+
+### How do I add a new source or agent?
+
+The simplest approach is to update `~/.config/cross-agent-skill-sync/config.conf`.
+
+Example:
+
+```bash
+SOURCE_team_shared="$HOME/company/skills"
+
+AGENT_custom_agent_USER="$HOME/.custom-agent/skills"
+AGENT_custom_agent_PROJECT=".custom-agent/skills"
+```
+
+After that, you can use `team-shared` and `custom-agent` directly in commands.
+
+### Why can `inventory` or `status` miss a skill I expected?
+
+Check these first:
+
+- whether `--sources` filtered out the source you expected
+- whether your config file was loaded
+- whether the configured directories really exist
+- whether the skill directory name matches what you asked for
+
+Use this command first to see what the sources actually expose:
+
+```bash
+bash scripts/sync_manager.sh inventory --json
+```

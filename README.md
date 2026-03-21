@@ -73,7 +73,8 @@ Published releases are skill-specific.
 
 Current downloadable asset:
 
-- `cross-agent-skill-sync.skill`
+- Release page: `releases/tag/cross-agent-skill-sync-v0.1.0`
+- Asset: `cross-agent-skill-sync.skill`
 
 ## Contributing
 
