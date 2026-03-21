@@ -2,6 +2,12 @@
 
 `cross-agent-skill-sync` manages already-installed skills across multiple agent tools. It does not install new skills or edit skill contents. It compares cross-agent skill state, plans symlink changes, and applies them only after explicit confirmation.
 
+## Example Screenshot
+
+The screenshot below shows a real interaction flow: checking current cross-agent skill coverage, reviewing the dry-run plan, and then applying the confirmed changes.
+
+![Cross-Agent Skill Sync example screenshot](./cross-agent-skill-sync.jpeg)
+
 ## Example Use Cases
 
 This skill is most useful when the problem is about existing skills across multiple agent tools rather than creating new ones.

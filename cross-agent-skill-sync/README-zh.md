@@ -2,6 +2,12 @@
 
 `cross-agent-skill-sync` 用来把已经存在的 skill 目录同步到多个 agent 工具中。它不会安装新 skill，不会修改 skill 内容，只会基于 dry-run 计划创建、修复或移除软链。
 
+## 示例截图
+
+下面这张截图展示了一次完整的真实交互流程：先盘点当前各个 agent 的 skill 覆盖情况，再查看 dry-run 计划，最后在确认后执行实际同步。
+
+![cross-agent-skill-sync 示例截图](./cross-agent-skill-sync.jpeg)
+
 ## 典型使用场景
 
 这个 skill 最适合处理“多个 agent 之间已经存在的 skill 怎么查看、对齐和清理”这类问题，而不是创建新 skill。
