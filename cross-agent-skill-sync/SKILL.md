@@ -298,8 +298,8 @@ Default status presentation order:
 2. scope
 3. sources
 4. inspected agents
-5. `Agent View`: which skills each agent is missing, linked, or externally covered by
-6. `Skill View`: which agents each key skill is present in, missing from, or covered externally by
+5. `Agent View`: which skills each agent is missing, linked, stale, or externally covered by
+6. `Skill View`: which agents each key skill is present in, missing from, stale in, or covered externally by
 7. `Summary`: most complete agent, biggest gap, or main pattern
 8. `Next Suggestion`: the most sensible next sync step if the user wants to continue
 
@@ -309,6 +309,13 @@ When an external source covers a skill:
 - do not count it as missing
 - do not create a redundant link during sync
 - if a redundant symlink already exists for the same externally loaded source, treat it as cleanup work instead of "correctly linked"
+
+When a source skill has been removed (stale symlinks):
+
+- during status, scan agent target directories for dangling symlinks not in the current inventory and report them as `stale`
+- during sync, emit `unlink` actions for stale symlinks with reason `stale-source-skill-removed`
+- include `stale_by_tool` in the status JSON alongside `missing_by_tool`
+- always mention stale items in the summary so the user can decide whether to clean them up
 
 ### Step 8: Wait for confirmation
 
@@ -364,12 +371,14 @@ Plan Summary
 - create links: 4
 - relink: 1
 - covered by external source: 2
+- stale unlink: 1
 - skipped: 1
 
 Result Summary
 - linked successfully: 4
 - relinked: 1
 - cleaned redundant links: 1
+- stale removed: 1
 - already correct: 2
 - skipped: 1
 

@@ -41,9 +41,10 @@ Preferred output order:
 1. `scope`
 2. selected tools
 3. `missing_by_tool`
-4. rows or summary that show `covered-by-external-source` when applicable
-5. any conflicts that need a source choice
-6. the shorter `summary`
+4. `stale_by_tool` for dangling symlinks whose source skill was removed
+5. rows or summary that show `covered-by-external-source` when applicable
+6. any conflicts that need a source choice
+7. the shorter `summary`
 
 ## 3. Sync
 

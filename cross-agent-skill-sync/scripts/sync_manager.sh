@@ -23,6 +23,7 @@ AGENT_gemini_PROJECT=".gemini/skills"
 AGENT_gemini_EXTERNAL_SOURCES="agents"
 AGENT_opencode_USER="${HOME_DIR}/.opencode/skills"
 AGENT_opencode_PROJECT=".opencode/skills"
+AGENT_opencode_EXTERNAL_SOURCES="agents"
 AGENT_openclaw_USER="${HOME_DIR}/.openclaw/skills"
 AGENT_openclaw_PROJECT=".openclaw/skills"
 AGENT_cursor_USER="${HOME_DIR}/.cursor/skills"
@@ -679,6 +680,8 @@ render_status_json() {
   printf '  "summary": %s,\n' "$(cat "$summary_json")"
   render_missing_by_tool "$rows_tsv"
   printf ',\n'
+  render_stale_by_tool "$rows_tsv"
+  printf ',\n'
   render_rows_by_tool "$rows_tsv"
   printf '\n}\n'
 
@@ -701,6 +704,29 @@ render_missing_by_tool() {
     emitted=1
     rm -f "$skills_json"
   done < <(awk -v FS="$FIELD_SEP" '$4 == "missing" { print $1 ":" $2 }' "$rows_tsv" | sort -u)
+  if [ "$emitted" -eq 1 ]; then
+    printf '\n  }'
+  else
+    printf '}'
+  fi
+}
+
+render_stale_by_tool() {
+  local rows_tsv="$1"
+  printf '  "stale_by_tool": {'
+  local emitted=0 key skills_json
+  while IFS= read -r key; do
+    skills_json="$(mktemp)"
+    awk -v FS="$FIELD_SEP" -v key="$key" '
+      ($1 ":" $2) == key && $4 == "stale" { print $3 }
+    ' "$rows_tsv" | sort -u | while IFS= read -r skill; do
+      printf '%s\n' "$(json_string "$skill")" >> "$skills_json"
+    done
+    [ "$emitted" -eq 1 ] && printf ','
+    printf '\n    %s: %s' "$(json_string "$key")" "$(json_file_array "$skills_json")"
+    emitted=1
+    rm -f "$skills_json"
+  done < <(awk -v FS="$FIELD_SEP" '$4 == "stale" { print $1 ":" $2 }' "$rows_tsv" | sort -u)
   if [ "$emitted" -eq 1 ]; then
     printf '\n  }'
   else
@@ -897,6 +923,26 @@ run_plan_sync() {
     done < "$roots_file"
   done < "$skills_file"
 
+  # Detect stale/orphaned symlinks (source skill was removed)
+  local stale_count=0
+  while IFS=$'\t' read -r tool scope_name skills_dir; do
+    [ -d "$skills_dir" ] || continue
+    while IFS= read -r symlink_path; do
+      [ -L "$symlink_path" ] || continue
+      local skill_name original_target
+      skill_name="$(basename "$symlink_path")"
+      if grep -Fqx "$skill_name" "$skills_file" 2>/dev/null; then
+        continue
+      fi
+      if [ ! -e "$symlink_path" ]; then
+        original_target="$(readlink "$symlink_path" 2>/dev/null || true)"
+        printf '%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n' \
+          "unlink" "$FIELD_SEP" "$tool" "$FIELD_SEP" "$scope_name" "$FIELD_SEP" "$skill_name" "$FIELD_SEP" "" "$FIELD_SEP" "" "$FIELD_SEP" "$symlink_path" "$FIELD_SEP" "$original_target" "$FIELD_SEP" "stale-source-skill-removed" >> "$actions_tsv"
+        stale_count=$((stale_count + 1))
+      fi
+    done < <(find "$skills_dir" -mindepth 1 -maxdepth 1 -type l 2>/dev/null | sort)
+  done < "$roots_file"
+
   build_summary_json "$summary_json" \
     "mkdir=$mkdir_count" \
     "link=$link_count" \
@@ -904,7 +950,8 @@ run_plan_sync() {
     "already_correct=$already_correct_count" \
     "covered_by_external_source=$covered_external_count" \
     "unlink_redundant_external=$unlink_redundant_count" \
-    "skipped=$skipped_count"
+    "skipped=$skipped_count" \
+    "stale_unlink=$stale_count"
 
   if [ -n "${OUTPUT_FILE:-}" ]; then
     : > "$OUTPUT_FILE"
@@ -1069,6 +1116,26 @@ run_plan_status() {
     done < "$roots_file"
   done < "$skills_file"
 
+  # Detect stale/orphaned symlinks (source skill was removed)
+  local stale_count=0
+  while IFS=$'\t' read -r tool scope_name skills_dir; do
+    [ -d "$skills_dir" ] || continue
+    while IFS= read -r symlink_path; do
+      [ -L "$symlink_path" ] || continue
+      local skill_name original_target
+      skill_name="$(basename "$symlink_path")"
+      if grep -Fqx "$skill_name" "$skills_file" 2>/dev/null; then
+        continue
+      fi
+      if [ ! -e "$symlink_path" ]; then
+        original_target="$(readlink "$symlink_path" 2>/dev/null || true)"
+        printf '%s%s%s%s%s%s%s%s%s%s%s%s%s%s%s\n' \
+          "$tool" "$FIELD_SEP" "$scope_name" "$FIELD_SEP" "$skill_name" "$FIELD_SEP" "stale" "$FIELD_SEP" "$symlink_path" "$FIELD_SEP" "" "$FIELD_SEP" "" "$FIELD_SEP" "$original_target" >> "$rows_tsv"
+        stale_count=$((stale_count + 1))
+      fi
+    done < <(find "$skills_dir" -mindepth 1 -maxdepth 1 -type l 2>/dev/null | sort)
+  done < "$roots_file"
+
   build_summary_json "$summary_json" \
     "missing=$missing_count" \
     "linked-correctly=$linked_correctly_count" \
@@ -1076,7 +1143,8 @@ run_plan_status() {
     "covered-by-external-source=$covered_external_count" \
     "linked-to-different-source=$linked_different_count" \
     "occupied-by-real-path=$occupied_count" \
-    "unknown-source=$unknown_count"
+    "unknown-source=$unknown_count" \
+    "stale=$stale_count"
 
   if [ -n "${OUTPUT_FILE:-}" ]; then
     render_status_json "$SCOPE" "$tools_file" "$skills_file" "$sources_file" "$inventory_file" "$conflicts_json" "$rows_tsv" "$summary_json" | tee "$OUTPUT_FILE"

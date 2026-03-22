@@ -77,6 +77,14 @@ This means:
 - Skills from that external source should be counted as available during status checks even if no symlink exists in the Gemini directory
 - Sync planning should avoid creating redundant links for those externally loaded skills
 
+OpenCode behaves the same way:
+
+```bash
+AGENT_opencode_USER="$HOME/.opencode/skills"
+AGENT_opencode_PROJECT=".opencode/skills"
+AGENT_opencode_EXTERNAL_SOURCES="agents"
+```
+
 ## Resolution notes
 
 - The skill scans source roots live each time. There is no cache and no manifest.

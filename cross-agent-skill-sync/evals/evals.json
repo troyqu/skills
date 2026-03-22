@@ -138,6 +138,32 @@
         "The status model distinguishes external coverage from explicit links.",
         "The summary remains logical and easy for the user to understand."
       ]
+    },
+    {
+      "id": 12,
+      "prompt": "Some skills were removed from my cc-switch source but the symlinks in agent directories still exist. When I run status or sync, detect these stale symlinks and tell me which ones should be cleaned up.",
+      "prompt_zh": "我的 cc-switch 源里删了一些技能，但 agent 目录下的软链还在。运行 status 或 sync 时应该检测出这些过期的软链，告诉我哪些需要清理。",
+      "expected_output": "Status should scan agent directories for dangling symlinks not in the current inventory and report them as stale. Sync should emit unlink actions for stale symlinks with a clear reason.",
+      "files": [],
+      "expectations": [
+        "Status output includes a stale state for dangling symlinks whose source skill was removed.",
+        "Sync planning emits unlink actions for stale symlinks with reason stale-source-skill-removed.",
+        "The stale_by_tool section in status JSON groups stale skills by agent.",
+        "The summary includes the stale count so users know cleanup is needed.",
+        "Stale detection does not flag working symlinks that point to valid source paths."
+      ]
+    },
+    {
+      "id": 13,
+      "prompt": "OpenCode also auto-loads the agents source like Gemini. When syncing a skill from agents to OpenCode, do not create a redundant link.",
+      "prompt_zh": "OpenCode 也像 Gemini 一样会自动读取 agents 源。把 agents 里的 skill 同步到 OpenCode 时不要创建多余的链接。",
+      "expected_output": "The behavior should treat the selected skill as covered by an external source for OpenCode, avoid redundant linking, and explain that the source is already auto-loaded.",
+      "files": [],
+      "expectations": [
+        "OpenCode has EXTERNAL_SOURCES configured for agents by default.",
+        "Sync planning avoids redundant links when the chosen source is already auto-loaded by OpenCode.",
+        "Status correctly counts externally loaded skills as available for OpenCode."
+      ]
     }
   ]
 }
