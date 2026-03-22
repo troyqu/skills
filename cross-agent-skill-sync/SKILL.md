@@ -93,9 +93,12 @@ unless the prompt clearly brings the topic back to skills or agent skills.
 
 The script is configuration-driven.
 
-- User-level config default path: `~/.config/cross-agent-skill-sync/config.conf`
-- Project-level config default path: `./.cross-agent-skill-sync.conf`
-- Optional explicit override: `SKILL_SYNC_CONFIG=/path/to/config.conf`
+Config loading order (later overrides earlier):
+
+1. Bundled `config.conf` in the skill directory — base defaults, do not modify
+2. `~/.config/cross-agent-skill-sync/config.conf` — user-level overrides
+3. `./.cross-agent-skill-sync.conf` — project-level overrides
+4. `SKILL_SYNC_CONFIG=/path/to/config.conf` — explicit override
 
 The config file is shell syntax, not JSON. Read `references/config.example.conf` when the user wants to add a new source or a new agent mapping.
 
@@ -125,21 +128,13 @@ Default agents:
 
 ## Missing config behavior
 
-Before collecting the rest of the workflow inputs, check whether any explicit config file exists:
+Before collecting the rest of the workflow inputs, check whether any user or project config file exists beyond the bundled default:
 
 - `~/.config/cross-agent-skill-sync/config.conf`
 - `./.cross-agent-skill-sync.conf`
 - the file pointed to by `SKILL_SYNC_CONFIG`, if present
 
-If none of them exists, stop and ask the user whether to create a default config first.
-
-Allowed responses:
-
-- create a user-level default config
-- create a project-level default config
-- continue without creating one and use built-in defaults
-
-Never create config files without explicit approval.
+If none of them exists, the bundled `config.conf` is still loaded automatically. The user may optionally create a custom config to override defaults.
 
 ## Mandatory workflow
 

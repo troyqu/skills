@@ -8,28 +8,11 @@ if [ -z "$HOME_DIR" ]; then
 fi
 
 FIELD_SEP=$'\x1f'
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)"
+SKILL_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
+DEFAULT_BUNDLED_CONFIG="${SKILL_ROOT}/config.conf"
 DEFAULT_CONFIG_USER="${HOME_DIR}/.config/cross-agent-skill-sync/config.conf"
 DEFAULT_CONFIG_PROJECT=".cross-agent-skill-sync.conf"
-
-SOURCE_cc_switch="${HOME_DIR}/.cc-switch/skills"
-SOURCE_agents="${HOME_DIR}/.agents/skills"
-
-AGENT_claude_code_USER="${HOME_DIR}/.claude/skills"
-AGENT_claude_code_PROJECT=".claude/skills"
-AGENT_codex_USER="${HOME_DIR}/.codex/skills"
-AGENT_codex_PROJECT=".codex/skills"
-AGENT_gemini_USER="${HOME_DIR}/.gemini/skills"
-AGENT_gemini_PROJECT=".gemini/skills"
-AGENT_gemini_EXTERNAL_SOURCES="agents"
-AGENT_opencode_USER="${HOME_DIR}/.opencode/skills"
-AGENT_opencode_PROJECT=".opencode/skills"
-AGENT_opencode_EXTERNAL_SOURCES="agents"
-AGENT_openclaw_USER="${HOME_DIR}/.openclaw/skills"
-AGENT_openclaw_PROJECT=".openclaw/skills"
-AGENT_cursor_USER="${HOME_DIR}/.cursor/skills"
-AGENT_cursor_PROJECT=".cursor/skills"
-AGENT_copilot_USER="${HOME_DIR}/.copilot/skills"
-AGENT_copilot_PROJECT=".copilot/skills"
 
 CONFIG_SOURCES_FILE=""
 CONFIG_USER_FILE=""
@@ -127,6 +110,7 @@ load_config() {
     CONFIG_PROJECT_FILE=""
   fi
 
+  load_config_file_if_present "$DEFAULT_BUNDLED_CONFIG"
   load_config_file_if_present "$CONFIG_USER_FILE"
   load_config_file_if_present "$CONFIG_PROJECT_FILE"
   if [ -n "${SKILL_SYNC_CONFIG:-}" ]; then

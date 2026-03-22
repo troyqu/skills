@@ -4,13 +4,12 @@ This skill manages links from configured source roots into configured target too
 
 ## Config files
 
-The script loads config from these locations, in this order:
+The script loads config from these locations, in this order (later overrides earlier):
 
-- `~/.config/cross-agent-skill-sync/config.conf`
-- `./.cross-agent-skill-sync.conf`
-- `SKILL_SYNC_CONFIG=/path/to/config.conf` if explicitly provided
-
-Later files override earlier files.
+1. Bundled `config.conf` in the skill directory — base defaults, do not modify
+2. `~/.config/cross-agent-skill-sync/config.conf` — user-level overrides
+3. `./.cross-agent-skill-sync.conf` — project-level overrides
+4. `SKILL_SYNC_CONFIG=/path/to/config.conf` if explicitly provided
 
 ## Source roots
 

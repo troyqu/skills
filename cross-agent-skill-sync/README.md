@@ -147,21 +147,19 @@ Default agents:
 
 ## Config Files
 
-The script reads config in this order:
+The script reads config in this order (later overrides earlier):
 
-1. `~/.config/cross-agent-skill-sync/config.conf`
-2. `./.cross-agent-skill-sync.conf`
-3. `SKILL_SYNC_CONFIG=/path/to/config.conf`
-
-Later files override earlier files.
+1. Bundled `config.conf` in the skill directory — base defaults, do not modify
+2. `~/.config/cross-agent-skill-sync/config.conf` — user-level overrides
+3. `./.cross-agent-skill-sync.conf` — project-level overrides
+4. `SKILL_SYNC_CONFIG=/path/to/config.conf` — explicit override
 
 Files included in this skill:
 
-- `config.conf`
-- `references/config.example.conf`
-- `README-zh.md`
+- `config.conf` — bundled defaults loaded automatically by the script
+- `references/config.example.conf` — template for user customization
 
-If no config file exists yet, the skill should ask whether to create a default one instead of writing files automatically.
+The bundled `config.conf` provides all default source and agent definitions. Users should not modify it directly. To customize, copy `references/config.example.conf` to `~/.config/cross-agent-skill-sync/config.conf` and add only the entries you want to change or extend.
 
 ## Config Shape
 
@@ -204,6 +202,12 @@ This means:
 - Sync should avoid creating redundant links for those skills
 - If a redundant symlink already exists for the same externally loaded source, the plan should treat it as cleanup work
 
+OpenCode behaves the same way:
+
+```bash
+AGENT_opencode_EXTERNAL_SOURCES="agents"
+```
+
 ## Boundary Rules For External Sources
 
 This behavior is generic and config-driven. Gemini is only one example.
@@ -235,6 +239,8 @@ Recommended status interpretation:
   A symlink exists, but the agent would already get the skill from the external source. This usually means the link is redundant.
 - `missing`
   The skill is not linked and is not covered by an external source.
+- `stale`
+  The symlink is dangling because the source skill was removed. This usually means cleanup is needed.
 
 ## How To Read Status Output
 
@@ -250,9 +256,9 @@ For status-first requests, the clearest order is:
 Recommended interpretation:
 
 - `Agent View`
-  Which skills each agent is missing, linked, or covered by an external source
+  Which skills each agent is missing, linked, stale, or covered by an external source
 - `Skill View`
-  Which agents each skill is present in, missing from, or covered externally by
+  Which agents each skill is present in, missing from, stale in, or covered externally by
 - `Summary`
   The main gap or pattern
 - `Next Suggestion`
@@ -348,7 +354,7 @@ This skill can be installed from the repository directory or from the packaged r
 
 ### Will this create `config.conf` automatically on first use?
 
-No. The safer behavior is to ask first and let the user choose whether to create a user-level config, a project-level config, or continue with built-in defaults.
+No. The bundled `config.conf` in the skill directory is loaded automatically and provides all defaults. Users do not need to create any config file to get started. To customize, create `~/.config/cross-agent-skill-sync/config.conf` with only the entries you want to override.
 
 ### Why does the workflow confirm items one by one?
 

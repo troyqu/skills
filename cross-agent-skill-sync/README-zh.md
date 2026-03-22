@@ -137,24 +137,19 @@ zip -qr /tmp/cross-agent-skill-sync.skill .
 
 ## 配置文件
 
-脚本会按下面顺序读取配置：
+脚本会按下面顺序读取配置（后加载的覆盖前面的同名项）：
 
-1. `~/.config/cross-agent-skill-sync/config.conf`
-2. `./.cross-agent-skill-sync.conf`
-3. `SKILL_SYNC_CONFIG=/path/to/config.conf` 指向的文件
+1. skill 目录下的 `config.conf` — 内置默认配置，不建议修改
+2. `~/.config/cross-agent-skill-sync/config.conf` — 用户级自定义覆盖
+3. `./.cross-agent-skill-sync.conf` — 项目级覆盖
+4. `SKILL_SYNC_CONFIG=/path/to/config.conf` 指向的文件 — 显式覆盖
 
-后加载的配置会覆盖前面的同名项。
+项目里提供的配置文件：
 
-项目里提供了一份可直接使用的示例配置：
+- `config.conf` — 内置默认配置，脚本自动加载
+- `references/config.example.conf` — 用户自定义模板
 
-- `config.conf`
-- `references/config.example.conf`
-
-如果用户是第一次使用这个 skill，而且上面这些配置文件都还不存在，skill 交互应该先询问是否要创建默认配置，而不是直接自动写文件。用户可以选择：
-
-- 创建用户级默认配置
-- 创建项目级默认配置
-- 不创建，继续使用内置默认值
+内置 `config.conf` 包含所有默认 source 和 agent 定义，用户不需要修改它。如果想自定义，把 `references/config.example.conf` 复制到 `~/.config/cross-agent-skill-sync/config.conf`，只写需要变更或新增的配置项即可。
 
 配置文件是 shell 语法，不是 JSON。格式如下：
 
@@ -185,18 +180,19 @@ AGENT_custom_agent_PROJECT=".custom-agent/skills"
 
 ## 外部自动加载源
 
-有些 agent 除了自己的 skill 目录，还会自动读取外部 source。Gemini 就是一个典型例子。
+有些 agent 除了自己的 skill 目录，还会自动读取外部 source。Gemini 和 OpenCode 就是典型例子。
 
 例如：
 
 ```bash
 AGENT_gemini_EXTERNAL_SOURCES="agents"
+AGENT_opencode_EXTERNAL_SOURCES="agents"
 ```
 
 这表示：
 
-- Gemini 自己的目录仍然是 `~/.gemini/skills`
-- Gemini 还会自动读取外部 source `agents`
+- Gemini / OpenCode 自己的目录仍然保留
+- 它们还会自动读取外部 source `agents`
 - 做状态统计时，这类 skill 即使没有链接到 `~/.gemini/skills`，也应该算可用
 - 做同步规划时，不应该再重复 link 一次
 - 如果已经存在同 source 的冗余软链，应该把它当成清理项而不是“已正确同步”
@@ -232,11 +228,12 @@ AGENT_some_tool_EXTERNAL_SOURCES="agents,team_shared"
   目标端有软链，但其实外部 source 已经覆盖到了，这通常意味着这个软链是冗余的。
 - `missing`
   既没有软链，也没有外部 source 覆盖。
+- `stale`
+  软链悬空，因为源端的 skill 目录已被移除。通常意味着需要清理。
 
 ## 典型流程
 
-1. 第一次使用时，如果还没有配置文件，先决定是否创建默认配置。
-2. 准备或确认配置文件，检查 source 和 agent 映射是否正确。
+1. 准备或确认配置文件，检查 source 和 agent 映射是否正确。内置 `config.conf` 会自动加载，如需自定义可创建用户级配置。
 3. 先明确 action，再按 `scope -> source -> skill -> agent` 的顺序补齐本次请求的条件。
 4. 如果是先看状态的场景，先生成 `inventory` 或 `plan-status` 结果，帮助用户理解现状。
 5. 如果是 `sync`，走 `scope -> source -> skill -> agent`。
@@ -285,9 +282,9 @@ AGENT_some_tool_EXTERNAL_SOURCES="agents,team_shared"
 推荐展示逻辑：
 
 - `Agent View`
-  哪个 agent 缺哪些 skill，哪个 agent 最完整，哪些 skill 是由外部 source 自动覆盖的
+  哪个 agent 缺哪些 skill，哪个 agent 最完整，哪些 skill 是由外部 source 自动覆盖的，哪些 skill 已过期需要清理
 - `Skill View`
-  某个 skill 在哪些 agent 已存在，在哪些 agent 缺失，哪些 agent 是外部覆盖
+  某个 skill 在哪些 agent 已存在，在哪些 agent 缺失，哪些 agent 是外部覆盖，哪些已过期
 - `Summary`
   当前最大的差异在哪里
 - `Next Suggestion`
@@ -385,13 +382,7 @@ bash scripts/sync_manager.sh apply --plan /tmp/skill-sync.plan --json
 
 ### 第一次使用时会自动创建 `config.conf` 吗
 
-不会自动创建。更推荐的行为是先询问用户是否要创建默认配置，再由用户决定：
-
-- 创建用户级配置到 `~/.config/cross-agent-skill-sync/config.conf`
-- 创建项目级配置到 `./.cross-agent-skill-sync.conf`
-- 或者先不创建，继续使用内置默认值
-
-这样能避免 skill 在用户没有确认的情况下改写本地环境。
+不需要。skill 目录下的内置 `config.conf` 会自动加载，提供所有默认值。用户不需要创建任何配置文件就能直接使用。如果想自定义，创建 `~/.config/cross-agent-skill-sync/config.conf`，只写需要覆盖或新增的项即可。
 
 ### 为什么它现在会一项一项确认，而不是直接执行
 
